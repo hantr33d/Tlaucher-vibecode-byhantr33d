@@ -1,38 +1,47 @@
 name: build
-on:
-  workflow_dispatch:
-
+on: [push, workflow_dispatch]
 jobs:
-  build:
+  mod:
     runs-on: ubuntu-latest
     steps:
-      - name: Скачиваем код
-        uses: actions/checkout@v4
-
-      - name: Чиним ошибку компиляции
-        run: |
-          sed -i 's/mc\.playerController\.syncCurrentPlayItem();//g' src/main/java/com/example/clientmod/ClientMod.java
-          grep -c "syncCurrentPlayItem" src/main/java/com/example/clientmod/ClientMod.java || echo "Строки удалены, всё чисто"
-
-      - name: Устанавливаем Java 8
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '8'
-
-      - name: Устанавливаем Gradle 7.6.4
-        uses: gradle/actions/setup-gradle@v3
+          distribution: temurin
+          java-version: 8
+      - uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: '7.6.4'
-
-      - name: Сборка
-        run: gradle build --no-daemon
-
-      - name: Публикуем артефакт
-        uses: actions/upload-artifact@v4
+          gradle-version: 5.6.4
+          arguments: build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clientmod-jar
+          path: build/libs/*.jar
+  launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pyinstaller
+      - run: pyinstaller --onefile --noconsole --name ClientLauncher launcher/launcher.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-exe
+          path: dist/ClientLauncher.exe
+  package:
+    needs: [mod, launcher]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - run: |
+          mkdir out
+          cp parts/clientmod-jar/*.jar out/
+          cp parts/launcher-exe/*.exe out/
+      - uses: actions/upload-artifact@v4
         with:
           name: ClientMod-Package
-          path: |
-            build/libs/*.jar
-            ClientLauncher.exe
-          if-no-files-found: warn
+          path: out
