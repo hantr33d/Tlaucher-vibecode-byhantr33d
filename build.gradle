@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+    }
+}
+apply plugin: 'net.minecraftforge.gradle'
+
+version = '1.0'
+group = 'com.example.clientmod'
+archivesBaseName = 'clientmod'
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+minecraft {
+    mappings channel: 'snapshot', version: '20210309-1.16.5'
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.39'
+}
+
+jar {
+    manifest {
+        attributes(["Specification-Title": "clientmod", "Implementation-Version": project.version])
+    }
+}
+
+jar.finalizedBy('reobfJar')
